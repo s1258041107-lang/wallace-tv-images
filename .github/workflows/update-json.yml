@@ -1,0 +1,81 @@
+name: Update data json
+
+on:
+  push:
+    paths:
+      - "*.jpg"
+
+jobs:
+  update-json:
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v4
+
+
+    - name: Generate data.json
+      run: |
+        python3 << 'EOF'
+        import json
+        import os
+        import re
+
+        files = []
+
+        for f in os.listdir("."):
+            if f.endswith(".jpg"):
+                files.append(f)
+
+
+        data = {}
+
+
+        for f in files:
+
+            name = f.replace(".jpg","")
+
+
+            match = re.match(
+                r"(.*?)(上午|下午)\d+",
+                name
+            )
+
+
+            if match:
+
+                key = match.group(1)+match.group(2)
+
+                if key not in data:
+                    data[key]=[]
+
+                data[key].append(f)
+
+
+
+        with open("data.json","w",encoding="utf-8") as file:
+            json.dump(
+                data,
+                file,
+                ensure_ascii=False,
+                indent=2
+            )
+
+        EOF
+
+
+
+    - name: Commit data.json
+
+      run: |
+
+        git config --global user.name "github-actions"
+
+        git config --global user.email "actions@github.com"
+
+        git add data.json
+
+        git commit -m "Auto update data.json" || exit 0
+
+        git push
